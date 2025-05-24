@@ -54,20 +54,6 @@ class ParkingSpot{
         this.endTime = 0;
         this.vehicleParkAction = vehicleParkAction;
     }
-    public void parkVehicle(Vehicle v) {
-        // System.out.println("HI MR");
-        this.v = v;
-        this.vehicleParkAction.parkVehicle(v);
-        this.parkingSpotStatus = ParkingSpotStatus.RESERVED;
-        this.startTime = Instant.now().toEpochMilli();
-        System.out.println("63" + "Parking Status " + this.parkingSpotStatus + " Vehicle "+ this.v + " "+this.startTime);
-    }
-    public void unparkVehicle(Vehicle v) {
-        this.vehicleParkAction.unparkVehicle(v);
-        this.parkingSpotStatus = ParkingSpotStatus.AVAILABLE;
-        this.endTime = Instant.now().toEpochMilli();
-        this.v = null;
-    }
     public long getParkingDuration() {
         return (endTime - startTime) / 1000;
     }
@@ -162,12 +148,11 @@ class Ticket{
     private long issueTime;
     private long endTime;
     private static int counter = 1;
-    public Ticket issueTicket(ParkingSpot parkingSpot,Vehicle v){
-        this.id = ++counter;
+    Ticket(Vehicle vehicle,ParkingSpot parkingSpot,long issueTime){
+        this.vehicle = vehicle;
         this.parkingSpot = parkingSpot;
-        this.vehicle = v;
-        this.issueTime = Instant.now().toEpochMilli();
-        return this;
+        this.issueTime = issueTime;
+        this.id = ++counter;
     }
     public long getIssueTime(){
         return this.issueTime;
@@ -224,24 +209,21 @@ class Exit extends ActionPoints{
     
 }
 class TicketService{
-    public Ticket issueTicket(VehicleType v,Vehicle v1,int id){
-        ParkingSpot spot = this.findBestPossiblePlace(v);
-        if(!spot.equals(null)){
-            Ticket t = entryGate.issueTicket(spot,v1);
-            System.out.println("**254 "+t+"\n");
-            return t;
-        }
-        return null;
+    public Ticket issueTicket(ParkingSpot parkingSpot,Vehicle v){
+        return new Ticket(v,parkingSpot,Instant.now().toEpochMilli());
     }
 }
 class VehicleService{
     private final TicketService t;
-    VehicleService(TicketService t){
+    private final ParkingService p;
+    VehicleService(TicketService t,ParkingService p){
         this.t = t;
+        this.p = p;
     }
-    public void parkVehicle(){
-        t.parkingSpot.parkVehicle(this); // parkVehicle
-        t.updateTicket(t.parkingSpot);
+    public void parkVehicle(Vehicle v){
+        
+        // t.parkingSpot.parkVehicle(this); // parkVehicle
+        // t.updateTicket(t.parkingSpot);
     }
     public void unparkVehicle(Ticket t){
         t.parkingSpot.unparkVehicle(this); // unParkVehcile
@@ -281,6 +263,7 @@ class ParkingService{
         }
         return null;
     }
+    
 }
 class Server{
     private List<ParkingSpot>parkingSpots;
@@ -396,3 +379,29 @@ public class ParkingLot{
 // Security - verify ticket
 
 // implement strategy pattern for payment methods
+
+
+// 1. S – Single Responsibility Principle
+// ✅ Vehicle, ParkingSpot, and Ticket are mostly focused.
+
+// ❌ Server does too many things (parking logic, position tracking, ticketing).
+
+// ❌ Vehicle handles both data and actions — parking logic should be service-driven, not on the model.
+
+// 🛠️ Suggestion: Extract TicketService, ParkingService, and VehicleService classes.
+
+
+// 2. O – Open/Closed Principle
+// ✅ Well-respected in payment modes (NB, UPI) and spot types.
+
+// ⚠️ ParkingSpot has logic that changes based on VehicleType. Consider fully encapsulating per-type logic.
+
+// 🛠️ Suggestion: Add an abstraction layer for spot assignment logic.
+
+
+// 5. D – Dependency Inversion Principle
+// ❌ High-level modules (like Vehicle) depend on low-level concrete classes (Ticket, ParkingSpot).
+
+// ❌ Payment depends directly on Ticket.
+
+// 🛠️ Suggestion: Introduce interfaces or service layers (IPaymentService, ITicketService) to decouple responsibilities.
