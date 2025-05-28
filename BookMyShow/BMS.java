@@ -1,5 +1,6 @@
 package BookMyShow;
 import java.util.*;
+import java.time.Instant;
 enum SeatType{
     STANDARD,
     DELUX
@@ -19,6 +20,12 @@ enum MovieType{
     THRILLER,
     COMEDY
 }
+enum StarCount{
+    FIVE,
+    FOUR,
+    THREE,
+    TWO
+}
 class Comment{
     private int id;
 }
@@ -29,8 +36,38 @@ class Rating{
     private User user;
     private Movie movie;
 }
+class Account{
+
+}
 class RatingService{
 
+}
+class User{
+    private Search searchObj;
+    private Address address;
+}
+class SystemUser extends User{
+    private Account account;
+    private int id;
+    private UserService userService;
+}
+class Admin extends SystemUser{
+    public void addMovies(){
+
+    }
+    public void addShow(){
+
+    }
+}
+class UserService{
+    private BookingService bookingService;
+    private PaymentService paymentService;
+    private RatingService ratingService;
+    UserService(BookingService bookingService,PaymentService paymentService,RatingService ratingService){
+        this.bookingService = bookingService;
+        this.paymentService = paymentService;
+        this.ratingService = ratingService;
+    }
 }
 interface ISeatStrategy{
     int getSeatPrice();
@@ -65,11 +102,13 @@ class Seat{
     private SeatType seatType;
     private SeatStatus seatStatus;
     private ISeatStrategy seatStrategy;
+    // private double cost;
     Seat(int id,SeatType seatType,ISeatStrategy seatStrategy){
         this.id = id;
         this.seatType = seatType;
         this.seatStatus = SeatStatus.AVAILABLE;
         this.seatStrategy = seatStrategy;
+        // this.cost = cost;
     }
     public SeatType getSeatType(){
         return this.seatType;
@@ -83,7 +122,6 @@ class Seat{
     public int getCost() {
         return seatStrategy.getSeatPrice();
     }
-
     public void printFeatures() {
         seatStrategy.getSeatFeatures();
     }
@@ -177,42 +215,18 @@ class Search{
         return searchStrategy.getCinemaHallsByMovieName(movieName);
     }
 }
-public class BMS {
-    private static BMS bms = null;
-    private List<CinemaHall>cinemaHall;
-    private List<Movie>movies;
-    private BMS(){}
-    private BMS(List<CinemaHall>cinemaHall,List<Movie>movies){
-        this.cinemaHall = cinemaHall;
-        this.movies = movies;
-    }
-    public static BMS getBookMyShowInstance(List<CinemaHall>cinemaHall,List<Movie>movies){
-        if(bms == null){
-            synchronized(BMS.class){
-                if(bms == null){
-                    bms = new BMS(cinemaHall,movies);
-                }
-            }
-        }
-        return bms;
-    }
-    public static void main(String []args){
-
-    }
-}
 class Booking{
     private int id;
     private Show show;
-    private List<User>users;
     private List<Seat>seats;
     private int totCost;
-    private TicketService ticketService;
-    Booking(int id,Show show,List<User>users,List<Seat>seats,int totCost){
+    private Ticket ticket;
+    Booking(int id,Show show,List<Seat>seats,int totCost,Ticket t){
         this.id = id;
-        this.users = users;
         this.show = show;
         this.totCost = totCost;
         this.seats = seats;
+        this.ticket = t;
     }
 }
 interface ISeatAllocator{
@@ -259,24 +273,43 @@ class UserPreferenceSeatAllocator implements ISeatAllocator{
 
     }
 }
+interface ICostCalculator{
+    int getTotCost(List<Seat>s);
+}
+class SimpleCostCalculatorStrategy implements ICostCalculator{
+    public int getTotCost(List<Seat>s){
+        int ans = 0;
+        for(int i=0;i<s.size();i++){
+            ans+=(s.get(i).getCost());
+        }
+        return ans;
+    }
+}
 class BookingService{
     private RequestValidatorService requestValidatorService;
     private Map<Show,List<Seat>>showObj;
     private ISeatAllocator seatAllocator;
     private TicketService ticketService;
-    BookingService(RequestValidatorService requestValidatorService,Map<Show,List<Seat>>showObj,ISeatAllocator seatAllocator){
+    private ICostCalculator costCalculator;
+    private SeatService seatService;
+    BookingService(RequestValidatorService requestValidatorService,Map<Show,List<Seat>>showObj,ISeatAllocator seatAllocator,ICostCalculator costCalculator,TicketService ticketService,SeatService seatService){
         this.requestValidatorService = requestValidatorService;
         this.showObj = showObj;
         this.seatAllocator = seatAllocator;
+        this.costCalculator = costCalculator;
+        this.ticketService = ticketService;
+        this.seatService = seatService;
     }
-    public Boolean reserve(Show show,int countUser,Map<SeatType,Integer>seatTypes){
+    public Booking reserve(Show show,int countUser,Map<SeatType,Integer>seatTypes){
         Request r = new Request(show, countUser, seatTypes);
         if(requestValidatorService.canServeUserRequest(showObj,r)){
-            seatAllocator.assignSeats(r);
-            ticketService.issueTicket(show, user, null, null, countUser);
-            return true;
+            List<Seat>ans = seatAllocator.assignSeats(r);
+            seatService.assignSeats(ans);
+            int cost = costCalculator.getTotCost(ans);
+            Ticket t = ticketService.issueTicket(show,ans,cost);
+            return new Booking(1,show,ans,cost,t);
         }
-        return false;
+        return null;
     }
     // public void unBook(){
 
@@ -285,32 +318,35 @@ class BookingService{
 class Ticket{
     private int id;
     private Show show;
-    private List<User>users;
     private List<Seat>seats;
-    private String startTime;
+    private Long issueTime;
     private int totCost;
-    Ticket(int id,Show show,List<User>users,List<Seat>seats,String startTime,int totCost){
+    Ticket(int id,Show show,List<Seat>seats,int totCost){
         this.id = id;
         this.show = show;
-        this.users = users;
-        this.startTime = startTime;
+        this.issueTime = Instant.now().toEpochMilli();
+        this.seats = seats;
         this.totCost = totCost;
     }
 }
 class TicketService{
-    public Ticket issueTicket(Show show,List<User>users,List<Seat>seats,String startTime,int totCost){
-        return new Ticket(1, show, users, seats, startTime, totCost);
+    public Ticket issueTicket(Show show,List<Seat>seats,int totCost){
+        return new Ticket(1, show, seats, totCost);
     }
     // public Boolean cancelTicket(){
 
     // }
 }
 class SeatService{
-    public void assignSeats(){
-
+    public void assignSeats(List<Seat> seats) {
+        for (Seat seat : seats) {
+            seat.updateSeatStatus(SeatStatus.BOOKED);
+        }
     }
-    public void unBookSeats(){
-
+    public void unBookSeats(List<Seat> seats) {
+        for (Seat seat : seats) {
+            seat.updateSeatStatus(SeatStatus.AVAILABLE);
+        }
     }
 }
 class Request{
@@ -362,8 +398,35 @@ class RequestValidatorService{
         return true;
     }
 }
+public class BMS {
+    private static BMS bms = null;
+    private List<CinemaHall>cinemaHall;
+    private List<Movie>movies;
+    private BMS(){}
+    private BMS(List<CinemaHall>cinemaHall,List<Movie>movies){
+        this.cinemaHall = cinemaHall;
+        this.movies = movies;
+    }
+    public static BMS getBookMyShowInstance(List<CinemaHall>cinemaHall,List<Movie>movies){
+        if(bms == null){
+            synchronized(BMS.class){
+                if(bms == null){
+                    bms = new BMS(cinemaHall,movies);
+                }
+            }
+        }
+        return bms;
+    }
+    public static void main(String []args){
+
+    }
+}
+
 class Payment{
 
+}
+class PaymentService{
+    
 }
 // booking
 //  - Book ticket, it will reserve a particular seat
