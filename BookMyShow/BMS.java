@@ -11,7 +11,7 @@ enum SeatStatus{
 }
 enum Language{
     ENGLISH,
-    HINDU,
+    HINDI,
     TELGU
 }
 enum MovieType{
@@ -112,6 +112,9 @@ class Show{
     public Movie getMovie(){
         return this.movie;
     }
+    public int getShowId(){
+        return this.id;
+    }
 }
 class Movie{
     private int id;
@@ -199,15 +202,165 @@ public class BMS {
 }
 class Booking{
     private int id;
+    private Show show;
+    private List<User>users;
+    private List<Seat>seats;
+    private int totCost;
+    private TicketService ticketService;
+    Booking(int id,Show show,List<User>users,List<Seat>seats,int totCost){
+        this.id = id;
+        this.users = users;
+        this.show = show;
+        this.totCost = totCost;
+        this.seats = seats;
+    }
+}
+interface ISeatAllocator{
+    List<Seat>assignSeats(Request r);
+}
+class RandomSeatAllocator implements ISeatAllocator{
+    private Map<Show,List<Seat>>showObj;
+    RandomSeatAllocator(Map<Show,List<Seat>>showObj){
+        this.showObj = showObj;
+    }
+    public List<Seat>assignSeats(Request r){
+        List<Seat>s = showObj.get(r.getShow());
+        Map<SeatType,Integer>mp = new HashMap<>();
+        for(int i=0;i<s.size();i++){
+            if(s.get(i).getSeatStatus()==SeatStatus.AVAILABLE){
+               if(!mp.containsKey(s.get(i).getSeatType())){
+                mp.putIfAbsent(s.get(i).getSeatType(),1);
+               }else{
+                 int val = mp.get(s.get(i).getSeatType());
+                 mp.putIfAbsent(s.get(i).getSeatType(),val+1);
+               }
+            }
+        }
+        List<Seat>ans = new ArrayList<>();
+        for(Map.Entry<SeatType,Integer>entry:r.getSeatTypes().entrySet()){
+            SeatType s1 = entry.getKey();
+            int count = entry.getValue();
+            if(mp.containsKey(s1)){
+                List<Seat>s2 = showObj.get(r.getShow());
+                for(int i=0;i<s2.size();i++){
+                    
+                }
+            }
+        }
+        return ans;
+    }
+}
+class UserPreferenceSeatAllocator implements ISeatAllocator{
+    private Map<Show,List<Seat>>showObj;
+    UserPreferenceSeatAllocator(Map<Show,List<Seat>>showObj){
+        this.showObj = showObj;
+    }
+    public List<Seat>assignSeats(Request r){
+
+    }
 }
 class BookingService{
+    private RequestValidatorService requestValidatorService;
+    private Map<Show,List<Seat>>showObj;
+    private ISeatAllocator seatAllocator;
+    private TicketService ticketService;
+    BookingService(RequestValidatorService requestValidatorService,Map<Show,List<Seat>>showObj,ISeatAllocator seatAllocator){
+        this.requestValidatorService = requestValidatorService;
+        this.showObj = showObj;
+        this.seatAllocator = seatAllocator;
+    }
+    public Boolean reserve(Show show,int countUser,Map<SeatType,Integer>seatTypes){
+        Request r = new Request(show, countUser, seatTypes);
+        if(requestValidatorService.canServeUserRequest(showObj,r)){
+            seatAllocator.assignSeats(r);
+            ticketService.issueTicket(show, user, null, null, countUser);
+            return true;
+        }
+        return false;
+    }
+    // public void unBook(){
 
+    // }
 }
 class Ticket{
-
+    private int id;
+    private Show show;
+    private List<User>users;
+    private List<Seat>seats;
+    private String startTime;
+    private int totCost;
+    Ticket(int id,Show show,List<User>users,List<Seat>seats,String startTime,int totCost){
+        this.id = id;
+        this.show = show;
+        this.users = users;
+        this.startTime = startTime;
+        this.totCost = totCost;
+    }
 }
 class TicketService{
+    public Ticket issueTicket(Show show,List<User>users,List<Seat>seats,String startTime,int totCost){
+        return new Ticket(1, show, users, seats, startTime, totCost);
+    }
+    // public Boolean cancelTicket(){
 
+    // }
+}
+class SeatService{
+    public void assignSeats(){
+
+    }
+    public void unBookSeats(){
+
+    }
+}
+class Request{
+    private int id;
+    private Show show;
+    private int userCount;
+    private Map<SeatType,Integer>seatTypes;
+    private static int count = 1;
+    Request(Show show,int userCount,Map<SeatType,Integer>seatTypes){
+        this.id = ++count;
+        this.show = show;
+        this.seatTypes = seatTypes;
+        this.userCount = userCount;
+    }
+    public Show getShow(){
+        return this.show;
+    }
+    public Map<SeatType,Integer>getSeatTypes(){
+        return this.seatTypes;
+    }
+    public int getUserCount(){
+        return this.userCount;
+    }
+}
+class RequestValidatorService{
+    public Boolean canServeUserRequest(Map<Show,List<Seat>>showObj,Request r){
+        List<Seat>s = showObj.get(r.getShow());
+        Map<SeatType,Integer>mp = new HashMap<>();
+        for(int i=0;i<s.size();i++){
+            if(s.get(i).getSeatStatus()==SeatStatus.AVAILABLE){
+               if(!mp.containsKey(s.get(i).getSeatType())){
+                mp.putIfAbsent(s.get(i).getSeatType(),1);
+               }else{
+                 int val = mp.get(s.get(i).getSeatType());
+                 mp.putIfAbsent(s.get(i).getSeatType(),val+1);
+               }
+            }
+        }
+        for(Map.Entry<SeatType,Integer>entry:r.getSeatTypes().entrySet()){
+            SeatType s1 = entry.getKey();
+            int count = entry.getValue();
+            if(mp.containsKey(s1)){
+                int val=mp.get(s1);
+                if(count>val){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
 class Payment{
 
