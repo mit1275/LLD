@@ -83,6 +83,7 @@ class Rider extends UserProfile{
 class Driver extends UserProfile{
     private List<Vehicle>v;
     private String licenseNo;
+    private Location currentLocation;
     Driver(UserProfile u,List<Vehicle>v,String licenseNo){
         super(u.getUserId(), u.getAccount());
         this.v = v;
@@ -157,8 +158,14 @@ interface ISearchRideStrategy{
     List<Driver>findMeRide(Location src,Location dst,Vehicle v);
 }
 class InsideCityRideStrategy implements ISearchRideStrategy{
+    private List<Driver>drivers;
+    InsideCityRideStrategy(List<Driver>drivers){
+        this.drivers = drivers;
+    }
     public List<Driver>findMeRide(Location src,Location dst,Vehicle v){
+        for(int i=0;i<drivers.size();i++){
 
+        }
     }
 }
 class OutSideCityRideStrategy implements ISearchRideStrategy{
@@ -166,9 +173,17 @@ class OutSideCityRideStrategy implements ISearchRideStrategy{
 
     }
 }
-class RideService{
-    public void requestRide(){
-        
+interface IRideService {
+    void requestRide(Location src, Location dst, Vehicle v);
+    void cancelRide();
+}
+class RideService implements IRideService{
+    private ISearchRideStrategy iSearchRideStrategy;
+    RideService(ISearchRideStrategy iSearchRideStrategy){
+        this.iSearchRideStrategy = iSearchRideStrategy;
+    }
+    public void requestRide(Location src,Location dst,Vehicle v){
+        iSearchRideStrategy.findMeRide(src,dst,v);
     }
     public void cancelRide(){
 
