@@ -83,7 +83,6 @@ class Rider extends UserProfile{
 class Driver extends UserProfile{
     private List<Vehicle>v;
     private String licenseNo;
-    private Location currentLocation;
     Driver(UserProfile u,List<Vehicle>v,String licenseNo){
         super(u.getUserId(), u.getAccount());
         this.v = v;
@@ -159,36 +158,111 @@ interface ISearchRideStrategy{
 }
 class InsideCityRideStrategy implements ISearchRideStrategy{
     private List<Driver>drivers;
-    InsideCityRideStrategy(List<Driver>drivers){
+    private ILocationService locationService;
+    InsideCityRideStrategy(List<Driver>drivers,ILocationService locationService){
         this.drivers = drivers;
+        this.locationService = locationService;
     }
     public List<Driver>findMeRide(Location src,Location dst,Vehicle v){
-        for(int i=0;i<drivers.size();i++){
-
-        }
+        
     }
 }
 class OutSideCityRideStrategy implements ISearchRideStrategy{
+    private List<Driver>drivers;
+    private ILocationService locationService;
+    OutSideCityRideStrategy(List<Driver>drivers,ILocationService locationService){
+        this.drivers = drivers;
+        this.locationService = locationService;
+    }
     public List<Driver>findMeRide(Location src,Location dst,Vehicle v){
 
     }
 }
+interface IRiderActions {
+    Ride requestRide(Location src, Location dst, Vehicle v);
+    void cancelRide(int rideId);
+}
+interface IDriverActions {
+    Ride acceptRide(int rideId);
+    void rejectRide(int rideId);
+}
+class RiderActions implements IRiderActions {
+    private IRideService rideService;
+    private int riderId;
+
+    RiderActions(IRideService rideService, int riderId) {
+        this.rideService = rideService;
+        this.riderId = riderId;
+    }
+
+    public Ride requestRide(Location src, Location dst, Vehicle v) {
+        return rideService.createRide(src, dst, v, riderId);
+    }
+
+    public void cancelRide(int rideId) {
+        Ride r = rideService.getRideById(rideId);
+        r.setRideStatus(RideStatus.RIDE_CANCELLED);
+    }
+}
 interface IRideService {
-    void requestRide(Location src, Location dst, Vehicle v);
-    void cancelRide();
+    Ride createRide(Location src, Location dst, Vehicle v, int riderId);
+    Ride getRideById(int rideId);
 }
 class RideService implements IRideService{
-    private ISearchRideStrategy iSearchRideStrategy;
-    RideService(ISearchRideStrategy iSearchRideStrategy){
-        this.iSearchRideStrategy = iSearchRideStrategy;
+    private ISearchRideStrategy searchStrategy;
+    private Map<Integer, Ride> rideMap = new HashMap<>();
+    private int rideIdCounter = 0;
+    public RideService(ISearchRideStrategy searchStrategy) {
+        this.searchStrategy = searchStrategy;
     }
-    public void requestRide(Location src,Location dst,Vehicle v){
-        iSearchRideStrategy.findMeRide(src,dst,v);
+    public Ride createRide(Location src, Location dst, Vehicle v, int riderId) {
+        List<Driver> availableDrivers = searchStrategy.findMeRide(src, dst, v);
+
+        if (availableDrivers.isEmpty()) return null;
+        Driver selectedDriver = availableDrivers.get(0);
+
+        Ride newRide = new Ride(++rideIdCounter, v, src, dst, 100, new Date());
+        rideMap.put(newRide.getId(), newRide);
+
+        return newRide;
     }
     public void cancelRide(){
 
     }
+    public RideStatus getRideStatus(){
+
+    }
+    public Boolean updateRideStatus(){
+
+    }
 }
+interface ILocationService {
+    void updateLocation(int userId, Location location);
+    Location getLocation(int userId);
+}
+class InMemoryLocationService implements ILocationService {
+    private Map<Integer, Location> userLocationMap = new HashMap<>();
+
+    public void updateLocation(int userId, Location location) {
+        userLocationMap.put(userId, location);
+    }
+
+    public Location getLocation(int userId) {
+        return userLocationMap.get(userId);
+    }
+}
+// interface IDriverRideAction{
+//     Ride acceptRide();
+//     void rejectRide();
+// }
+// class RideAction implements IDriverRideAction{
+//     public Ride acceptRide(){
+
+//     }
+//     public void rejectRide(){
+
+//     }
+// }
 public class RideSharing {
     private static RideSharing rideSharing = null;
     private RideSharing(){}
