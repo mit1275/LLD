@@ -14,9 +14,8 @@ class Folder{
     }
 }
 interface IFolderService{
-    List<File>addFile();
-    List<File>removeFile();
-    void displayFolderStructure();
+    List<File>addFile(int parent_id,File f);
+    List<File>removeFile(int parent_id,File f);
     void deleteFolder();
 }
 class FolderService implements IFolderService{
@@ -49,9 +48,6 @@ class FolderService implements IFolderService{
         }
         return null;
     }
-    public void displayFolderStructure(){
-        
-    }
     public void deleteFolder(){
 
     }
@@ -79,16 +75,16 @@ class File{
     private int parent_id;
     private boolean isFileExist;
     private List<Integer>user_idAccess;
-    private Version version;
-    File(int id,String name,List<Content>contents,int parent_id,Version version){
+    private int versionId;
+    File(int id,String name,List<Content>contents){
         this.id = id;
         this.name = name;
         this.contents = contents;
-        this.parent_id = parent_id;
+        this.parent_id = -1;
+        this.versionId = 1;
         isFileExist = true;
         user_idAccess = new ArrayList<>();
         user_idAccess.add(user_id);
-        this.version = version;
     }
     public int getId(){
         return this.id;
@@ -99,6 +95,24 @@ class File{
     }
     public boolean getFileStatus(){
         return this.isFileExist;
+    }
+    public void updateVersion(int version_id){
+        this.versionId = version_id;
+    }
+    public void updateParent(int parent_id){
+        this.parent_id = parent_id;
+    }
+}
+interface IFileRepository{
+    void updateVersion(File f,int version_id);
+    void updateParent(File f,int version_id);
+}
+class FileRepository implements IFileRepository{
+    public void updateVersion(File f,int version_id){
+        f.updateVersion(version_id);
+    }
+    public void updateParent(File f,int parent_id){
+        f.updateParent(parent_id);
     }
 }
 class Version{
@@ -111,11 +125,44 @@ class Version{
         this.createdAt = Instant.EPOCH.toEpochMilli();
     }
 }
+interface IVersion{
+    Version createVersion();
+    Version getVersion();
+}
 interface IFileUploaderService{
     File uploadFile(String data,String fileName);
 }
 interface IFileDownloaderService{
     File downloadFile(int file_id);
+}
+class IFileVersioning{
+    void assignVersion(File f);
+    File getFile(File f,int version_id);
+}
+class FileVersionService implements IFileVersioning{
+    private Map<Integer,List<File>>files;
+    FileVersionService(Map<Integer,List<File>>files){
+        this.files = files;
+    }
+    public void assignVersion(File f){
+        int file_id=f.getId();
+        if(files.get(file_id)!=null){
+            List<File>f2 = files.get(file_id);
+            f2.add(f);
+        }
+    }
+    public File getFile(File f,int version_id){
+
+    }
+}
+class IFileValidateService{
+    boolean isDuplicateFile(String fileName);
+}
+class FileValidateService implements IFileValidateService{
+    private List<File>files;
+    public boolean isDuplicateFile(String fileName,int parent_id){
+
+    }
 }
 class FileUploadService implements IFileUploaderService{
     private Map<Integer,File>fileData;
@@ -127,7 +174,7 @@ class FileUploadService implements IFileUploaderService{
             Content content = new Content(i+1, part,i+1);
             cn.add(content);
         }
-        File f = new File(1, fileName, cn, -1, new Version(1, 1)); // check if file is already uploaded with same parent
+        File f = new File(1, fileName, cn);
         fileData.putIfAbsent(f.getId(), f);
         return f;
     }
