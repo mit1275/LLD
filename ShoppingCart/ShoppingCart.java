@@ -23,7 +23,6 @@ class Description{
 class ProductBuilder{
     private int id;
     private String name;
-    private Integer qty;
     private Description description;
     private double price;
     public ProductBuilder id(int id){
@@ -34,28 +33,20 @@ class ProductBuilder{
         this.name = name;
         return this;
     }
-
-    public ProductBuilder qty(Integer qty) {
-        this.qty = qty;
-        return this;
-    }
     public ProductBuilder description(int descId, String content) {
         this.description = new Description(descId, content);
         return this;
     }
-
     public ProductBuilder price(double price) {
         this.price = price;
         return this;
     }
-
     public Product createProduct() {
-        Product product = new Product(id, name, qty);
+        Product product = new Product(id, name);
         product.setDescription(description);
         product.setPrice(price);
         return product;
     }
-
 }
 interface IProductStrategy{
     double calculatePrice(Product product);
@@ -206,6 +197,25 @@ class Product{
         return this.price;
     }
 }
+interface ICartRepository {
+    Cart getCartByUserId(int userId);
+    void saveCart(int userId, Cart cart);
+}
+class CartSystemRepository implements ICartRepository{
+    private Map<Integer,Cart>user_cart_mapping;
+    private List<Product>products;
+    CartSystemRepository(Map<Integer,Cart>user_cart_mapping,List<Product>products){
+        this.user_cart_mapping = user_cart_mapping;
+        this.products = products;
+    }
+    public Cart getCartByUserId(int userId){
+        Cart cart = user_cart_mapping.get(userId);
+        return cart;
+    }
+    public void saveCart(int userId, Cart cart){
+        user_cart_mapping.put(userId, cart);
+    }
+}
 class CartItem{
     private int id;
     private Product product;
@@ -217,16 +227,23 @@ class CartItem{
     }
 }
 interface ICartService{
-    void addToCart(CartItem item);
-    void removeFromCart(CartItem item);
+    void addToCart(int user_id,CartItem item);
+    void removeFromCart(int userId,CartItem item);
     void emptyCart(Cart cart);
 }
 class CartService implements ICartService{
-    public void addToCart(CartItem item) {
-
+    private ICartRepository cartRepository;
+    CartService(ICartRepository cartRepository){
+        this.cartRepository = cartRepository;
     }
-    public void removeFromCart(CartItem item){
-
+    public void addToCart(int userId,CartItem item) {
+        Cart cart = cartRepository.getCartByUserId(userId);
+        cart.addToCart(item);
+        cartRepository.saveCart(userId, cart);
+    }
+    public void removeFromCart(int userId,CartItem item){
+        Cart cart = cartRepository.getCartByUserId(userId);
+        cart.removeFormCart(item);
     }
     public void emptyCart(Cart cart){
 
@@ -254,9 +271,11 @@ class Cart{
     private int id;
     private int user_id;
     private boolean isEmpty = true;
+    private List<CartItem>listOfCartItems;
     Cart(int id,int user_id){
         this.id = id;
         this.user_id = user_id;
+        this.listOfCartItems = new ArrayList<>();
     }
     public Integer getCartId(){
         return this.id;
@@ -269,6 +288,17 @@ class Cart{
     }
     public void updateCartStatus(boolean isEmpty){
         this.isEmpty = isEmpty;
+    }
+    public List<CartItem>getCartItems(){
+        return this.listOfCartItems;
+    }
+    public List<CartItem>addToCart(CartItem cartItem){
+        listOfCartItems.add(cartItem);
+        return listOfCartItems;
+    }
+    public List<CartItem>removeFormCart(CartItem cartItem){
+        listOfCartItems.remove(cartItem);
+        return listOfCartItems;
     }
 }
 public class ShoppingCart {
