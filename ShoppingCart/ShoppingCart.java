@@ -206,23 +206,29 @@ class Product{
         return this.price;
     }
 }
-class Item{
+class CartItem{
     private int id;
-    private List<Product>products;
+    private Product product;
+    private int qty;
+    CartItem(int id,Product product,int qty){
+        this.id = id;
+        this.product = product;
+        this.qty = qty;
+    }
 }
 interface ICartService{
-    void addToCart(Item item);
-    void removeFromCart(Item item);
-    void emptyCart();
+    void addToCart(CartItem item);
+    void removeFromCart(CartItem item);
+    void emptyCart(Cart cart);
 }
 class CartService implements ICartService{
-    public void addToCart(Item item) {
+    public void addToCart(CartItem item) {
 
     }
-    public void removeFromCart(Item item){
+    public void removeFromCart(CartItem item){
 
     }
-    public void emptyCart(){
+    public void emptyCart(Cart cart){
 
     }
 }
@@ -244,15 +250,27 @@ class SellerService implements ISellerService{
 
     }
 }
-class CustomerAction implements IUserActions{
-    void addToCart(Item item);
-    void removeFromCart(Item item);
-    void emptyCart(Item item);
-    void checkout(Item item);
+class Cart{
+    private int id;
+    private int user_id;
+    private boolean isEmpty = true;
+    Cart(int id,int user_id){
+        this.id = id;
+        this.user_id = user_id;
+    }
+    public Integer getCartId(){
+        return this.id;
+    }
+    public Integer getUserId(){
+        return this.user_id;
+    }
+    public boolean isCartEmpty(){
+        return this.isEmpty == true ? true : false;
+    }
+    public void updateCartStatus(boolean isEmpty){
+        this.isEmpty = isEmpty;
+    }
 }
-// class Cart{
-//     private int id;
-// }
 public class ShoppingCart {
     private static ShoppingCart shoppingCart = null;
     ShoppingCart(){};
