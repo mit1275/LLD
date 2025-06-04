@@ -3,9 +3,9 @@ package ShoppingCart;
 import java.util.ArrayList;
 import java.util.*;
 
-// class Rating{
-
-// }
+class Rating{
+    private int id;
+}
 class Description{
     private int id;
     private String content;
@@ -69,6 +69,36 @@ interface IDeliveryStrategy{
     String getDeliveryMethod();
     void deliverProduct();
 }
+interface Offer{
+    boolean isApplicable(Product product);
+    double applyDiscount(Product product);
+}
+class OfferEngine{
+    public double getBestOfferPrice(Product product, List<Offer> availableOffers) {
+        double min = product.getPrice();
+        for (Offer o : availableOffers) {
+            if (o.isApplicable(product)) {
+                min = Math.min(min, o.applyDiscount(product));
+            }
+        }
+        return min;
+    }
+}
+class FlatDiscountOffer implements Offer{
+    private double discount;
+
+    public FlatDiscountOffer(double discount) {
+        this.discount = discount;
+    }
+
+    public boolean isApplicable(Product product) {
+        return true;
+    }
+
+    public double applyDiscount(Product product) {
+        return product.getPrice() - discount;
+    }
+}
 class MailDelivery implements IDeliveryStrategy{
     public String getDeliveryMethod(){
         return "MAIL";
@@ -113,18 +143,20 @@ class TaxDecorator implements PriceComponent{
         this.taxAmount = taxAmount;
     }
     public double getPrice(){
-        return priceComponent.getPrice() - taxAmount;
+        return priceComponent.getPrice() + taxAmount;
     }
 }
 
 class DigitalProduct implements IProductStrategy{
     private IDeliveryStrategy iDeliveryStrategy;
-    DigitalProduct(IDeliveryStrategy iDeliveryStrategy){
+    private double discountAmount;
+    DigitalProduct(IDeliveryStrategy iDeliveryStrategy,double discountAmount){
         this.iDeliveryStrategy = iDeliveryStrategy;
+        this.discountAmount = discountAmount;
     }
     public double calculatePrice(Product product){
         PriceComponent priceComponent = new BasePrice(product.getPrice());
-        priceComponent = new DiscountDecorator(priceComponent, 50);
+        priceComponent = new DiscountDecorator(priceComponent, discountAmount);
         return priceComponent.getPrice();
     }
     public boolean isDeliverable(){
@@ -136,12 +168,14 @@ class DigitalProduct implements IProductStrategy{
 }
 class GiftProduct implements IProductStrategy{
     private IDeliveryStrategy iDeliveryStrategy;
-    GiftProduct(IDeliveryStrategy iDeliveryStrategy){
+    private double discountAmount;
+    GiftProduct(IDeliveryStrategy iDeliveryStrategy,double discountAmount){
         this.iDeliveryStrategy = iDeliveryStrategy;
+        this.discountAmount = discountAmount;
     }
     public double calculatePrice(Product product){
         PriceComponent priceComponent = new BasePrice(product.getPrice());
-        priceComponent = new DiscountDecorator(priceComponent, 50);
+        priceComponent = new DiscountDecorator(priceComponent, discountAmount);
         return priceComponent.getPrice();
     }
     public boolean isDeliverable(){
@@ -156,26 +190,66 @@ class Product{
     private String name;
     private Description description;
     private List<Rating>rating;
-    private Integer qty;
     private double price;
-    Product(int id,String name,Integer qty){
+    Product(int id,String name){
         this.id = id;
         this.name = name;
-        this.qty = qty;
         this.rating = new ArrayList<>();
     }
     void setDescription(Description description) {
         this.description = description;
     }
-
     void setPrice(double price) {
         this.price = price;
     }
+    double getPrice(){
+        return this.price;
+    }
 }
-// class Item{
-//     private int id;
-//     private List<Product>products;
-// }
+class Item{
+    private int id;
+    private List<Product>products;
+}
+interface ICartService{
+    void addToCart(Item item);
+    void removeFromCart(Item item);
+    void emptyCart();
+}
+class CartService implements ICartService{
+    public void addToCart(Item item) {
+
+    }
+    public void removeFromCart(Item item){
+
+    }
+    public void emptyCart(){
+
+    }
+}
+interface ISearch{
+    
+}
+class Search implements ISearch{
+
+}
+interface ISellerService{
+    void addProduct();
+    void updateProduct();
+}
+class SellerService implements ISellerService{
+    public void addProduct(){
+
+    }
+    public void updateProduct(){
+
+    }
+}
+class CustomerAction implements IUserActions{
+    void addToCart(Item item);
+    void removeFromCart(Item item);
+    void emptyCart(Item item);
+    void checkout(Item item);
+}
 // class Cart{
 //     private int id;
 // }
