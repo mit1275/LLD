@@ -20,6 +20,54 @@ class Description{
         return this.content;
     }
 }
+interface PriceCalculator{
+    double calculateFinalPrice(Cart cart);
+}
+interface TaxAndExtraDiscounts{
+    double calculateFinalPrice();
+}
+interface CostCalculator{
+    double getFinalPrice(Cart cart);
+}
+class CostCalculatorService implements CostCalculator{
+    private PriceCalculator priceCalculator;
+    private TaxAndExtraDiscounts taxAndExtraDiscounts;
+    CostCalculatorService(PriceCalculator priceCalculator,TaxAndExtraDiscounts taxAndExtraDiscounts){
+        this.priceCalculator = priceCalculator;
+        this.taxAndExtraDiscounts = taxAndExtraDiscounts;
+    }
+    public double getFinalPrice(Cart cart){
+        double price1 = priceCalculator.calculateFinalPrice(cart);
+        price1 = taxAndExtraDiscounts.calculateFinalPrice();
+        return price1;
+    }
+}
+class CalculatePriceWithOffers implements PriceCalculator{
+    private OfferEngine offerEngine;
+    private List<Offer>offers;
+    CalculatePriceWithOffers(OfferEngine offerEngine,List<Offer>offers){
+        this.offerEngine = offerEngine;
+        this.offers = offers;
+    }
+    public double calculateFinalPrice(Cart cart){
+        double totCost = 0;
+        List<CartItem>cartItems = cart.getCartItems();
+        for(int i=0;i<cartItems.size();i++){
+            Product product = cartItems.get(i).getProduct();
+            totCost+=offerEngine.getBestOfferPrice(product, offers);
+        }
+        return totCost;
+    }
+}
+class TaxAndExtra implements TaxAndExtraDiscounts{
+    private PriceComponent priceComponent;
+    TaxAndExtra(PriceComponent priceComponent){
+        this.priceComponent = priceComponent;
+    }
+    public double calculateFinalPrice(){
+        return priceComponent.getPrice();
+    }
+}
 class ProductBuilder{
     private int id;
     private String name;
@@ -225,11 +273,29 @@ class CartItem{
         this.product = product;
         this.qty = qty;
     }
+    public Product getProduct(){
+        return this.product;
+    }
+    public Integer getQty(){
+        return this.qty;
+    }
 }
 interface ICartService{
     void addToCart(int user_id,CartItem item);
     void removeFromCart(int userId,CartItem item);
     void emptyCart(Cart cart);
+}
+interface ICheckout{
+    void proceedToCheckout(Cart cart);
+}
+class CheckoutService implements ICheckout{
+    private CostCalculatorService costCalculatorService;
+    CheckoutService(CostCalculatorService costCalculatorService){
+        this.costCalculatorService = costCalculatorService;
+    }
+    public void proceedToCheckout(Cart cart){
+        costCalculatorService.getFinalPrice(cart);
+    }
 }
 class CartService implements ICartService{
     private ICartRepository cartRepository;
@@ -258,6 +324,25 @@ class Search implements ISearch{
 interface ISellerService{
     void addProduct();
     void updateProduct();
+}
+interface ISellerRepository{
+    void addProduct();
+    void updateProduct();
+}
+class SellerRepository implements ISellerRepository{
+    private Map<Integer,Cart>user_cart_mapping;
+    private List<Product>products;
+    SellerRepository(Map<Integer,Cart>user_cart_mapping,List<Product>products){
+        this.user_cart_mapping = user_cart_mapping;
+        this.products = products;
+    }
+    public Cart getCartByUserId(int userId){
+        Cart cart = user_cart_mapping.get(userId);
+        return cart;
+    }
+    public void saveCart(int userId, Cart cart){
+        user_cart_mapping.put(userId, cart);
+    }
 }
 class SellerService implements ISellerService{
     public void addProduct(){
@@ -318,7 +403,6 @@ public class ShoppingCart {
 
     }
 }
-
 // DigitalProduct and GiftProduct
 // Gift Product will have discounts directly
 // Give discounts based on offers -> use decorator pattern
