@@ -150,6 +150,14 @@ class MessageService implements IMessageService {
 interface ReceiveMessageStrategy{
     void receiveMessage(Message message);
 }
+interface IPushMessageService{
+    void pushMessage(Message message);
+}
+class pushMessageService implements IPushMessageService{
+    public void pushMessage(Message message){
+        
+    }
+}
 class PushMessageStrategy implements ReceiveMessageStrategy{
     public void receiveMessage(Message message){
         // send to user or group bifurcate
