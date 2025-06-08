@@ -59,6 +59,39 @@ class SingleUserMessage extends Message {
 interface IMessageService{
     Message sendMessage(Message msg);
 }
+interface IMessageObserver{
+    void onMessageReceived(Message message);
+}
+class EmailNotifier implements IMessageObserver{
+    public void onMessageReceived(Message message){
+
+    }
+}
+class WebSocketNotifier implements IMessageObserver{
+    public void onMessageReceived(Message message){
+        
+    }
+}
+interface INotificationManager{
+    void subscribe(IMessageObserver iMessageObserver);
+    void unsubscribe(IMessageObserver iMessageObserver);
+    void notifyUser(Message message);
+}
+class NotificationManager implements INotificationManager{
+    private final List<IMessageObserver> observers = new ArrayList<>();
+    public void subscribe(IMessageObserver iMessageObserver){
+        observers.add(iMessageObserver);
+    }
+    public void unsubscribe(IMessageObserver iMessageObserver){
+        observers.remove(iMessageObserver);
+    }
+    public void notifyUser(Message message){
+        for(int i=0;i<observers.size();i++){
+            IMessageObserver iMessageObserver = observers.get(i);
+            iMessageObserver.onMessageReceived(message);
+        }
+    }
+}
 interface IMessageRepository {
     Message saveMessage(Message message);
     List<Message> getMessagesSentByUser(int userId);
@@ -103,17 +136,29 @@ class InMemoryMessageRepository implements IMessageRepository {
 }
 class MessageService implements IMessageService {
     private final IMessageRepository messageRepository;
-    MessageService(IMessageRepository messageRepository) {
+    private final INotificationManager notificationManager;
+    MessageService(IMessageRepository messageRepository,INotificationManager notificationManager) {
         this.messageRepository = messageRepository;
+        this.notificationManager = notificationManager;
     }
     public Message sendMessage(Message message){
         Message message2 = messageRepository.saveMessage(message);
+        notificationManager.notifyUser(message2);
         return message2;
     }
 }
-
 interface ReceiveMessageStrategy{
-
+    void receiveMessage(Message message);
+}
+class PushMessageStrategy implements ReceiveMessageStrategy{
+    public void receiveMessage(Message message){
+        // send to user or group bifurcate
+    }
+}
+class PullMessageStrategy implements ReceiveMessageStrategy{
+    public void receiveMessage(Message message){
+        
+    }
 }
 interface MessageNotifyService{
     void sendNotification();
