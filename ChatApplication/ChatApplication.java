@@ -137,34 +137,37 @@ class InMemoryMessageRepository implements IMessageRepository {
 class MessageService implements IMessageService {
     private final IMessageRepository messageRepository;
     private final INotificationManager notificationManager;
-    MessageService(IMessageRepository messageRepository,INotificationManager notificationManager) {
+    private final ISendMessageStrategy sendMessageStrategy;
+    MessageService(IMessageRepository messageRepository,INotificationManager notificationManager,ISendMessageStrategy sendMessageStrategy) {
         this.messageRepository = messageRepository;
         this.notificationManager = notificationManager;
+        this.sendMessageStrategy = sendMessageStrategy;
     }
     public Message sendMessage(Message message){
         Message message2 = messageRepository.saveMessage(message);
         notificationManager.notifyUser(message2);
+        // sendMessageStrategy.sendMessage(message2,messageRepository);
         return message2;
     }
 }
-interface ReceiveMessageStrategy{
-    void receiveMessage(Message message);
+interface ISendMessageStrategy{
+    void sendMessage(Message message);
 }
-interface IPushMessageService{
-    void pushMessage(Message message);
-}
-class pushMessageService implements IPushMessageService{
-    public void pushMessage(Message message){
+class PushMessageStrategy implements ISendMessageStrategy{
+    private final IMessageRepository messageRepository;
+    PushMessageStrategy(IMessageRepository messageRepository){
+        this.messageRepository = messageRepository;
+    }
+    public void sendMessage(Message message){
         
     }
 }
-class PushMessageStrategy implements ReceiveMessageStrategy{
-    public void receiveMessage(Message message){
-        // send to user or group bifurcate
+class PullMessageStrategy implements ISendMessageStrategy{
+    private final IMessageRepository messageRepository;
+    PullMessageStrategy(IMessageRepository messageRepository){
+        this.messageRepository = messageRepository;
     }
-}
-class PullMessageStrategy implements ReceiveMessageStrategy{
-    public void receiveMessage(Message message){
+    public void sendMessage(Message message){
         
     }
 }
