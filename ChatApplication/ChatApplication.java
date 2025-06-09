@@ -136,17 +136,14 @@ class InMemoryMessageRepository implements IMessageRepository {
 }
 class MessageService implements IMessageService {
     private final IMessageRepository messageRepository;
-    private final INotificationManager notificationManager;
     private final ISendMessageStrategy sendMessageStrategy;
-    MessageService(IMessageRepository messageRepository,INotificationManager notificationManager,ISendMessageStrategy sendMessageStrategy) {
+    MessageService(IMessageRepository messageRepository,ISendMessageStrategy sendMessageStrategy) {
         this.messageRepository = messageRepository;
-        this.notificationManager = notificationManager;
         this.sendMessageStrategy = sendMessageStrategy;
     }
     public Message sendMessage(Message message){
         Message message2 = messageRepository.saveMessage(message);
-        notificationManager.notifyUser(message2);
-        // sendMessageStrategy.sendMessage(message2,messageRepository);
+        sendMessageStrategy.sendMessage(message2);
         return message2;
     }
 }
@@ -155,11 +152,13 @@ interface ISendMessageStrategy{
 }
 class PushMessageStrategy implements ISendMessageStrategy{
     private final IMessageRepository messageRepository;
-    PushMessageStrategy(IMessageRepository messageRepository){
+    private final INotificationManager notificationManager;
+    PushMessageStrategy(IMessageRepository messageRepository,INotificationManager notificationManager){
         this.messageRepository = messageRepository;
+        this.notificationManager = notificationManager;
     }
     public void sendMessage(Message message){
-        
+        notificationManager.notifyUser(message);
     }
 }
 class PullMessageStrategy implements ISendMessageStrategy{
@@ -168,11 +167,8 @@ class PullMessageStrategy implements ISendMessageStrategy{
         this.messageRepository = messageRepository;
     }
     public void sendMessage(Message message){
-        
+
     }
-}
-interface MessageNotifyService{
-    void sendNotification();
 }
 public class ChatApplication {
     public static void main(String []args){
