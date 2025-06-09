@@ -5,6 +5,10 @@ enum AccountStatus{
     ACTIVE,
     NOT_REGISTERED
 }
+interface IReadReceipt{
+    void markAsRead(int messageId, int readerId);
+    boolean isMessageReadByUser(int messageId, int readerId);
+}
 interface IUserManagerStrategy{
     boolean isUserActive(User u);
 }
