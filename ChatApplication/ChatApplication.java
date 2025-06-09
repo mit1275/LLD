@@ -5,6 +5,33 @@ enum AccountStatus{
     ACTIVE,
     NOT_REGISTERED
 }
+interface IUserManagerStrategy{
+    boolean isUserActive(User u);
+}
+interface ICacheManager extends IUserManagerStrategy{
+    void addUser(User u);
+    void removeUser(User u);
+}
+class CacheManager implements ICacheManager{
+    private final List<User>users;
+    CacheManager(){
+        this.users = new ArrayList<>();
+    }
+    public void addUser(User u){
+        users.add(u);
+    }
+    public void removeUser(User u){
+        users.remove(u);
+    }
+    public boolean isUserActive(User u){
+        for(int i=0;i<users.size();i++){
+            if(users.get(i) == u){
+                return true;
+            }
+        }
+        return false;
+    }
+}
 class Account{
     private String email,password;
     private String mobNumber;
@@ -34,7 +61,6 @@ abstract class Message{
 }
 class GroupMessage extends Message {
     private final int group_id_sent_to;
-
     public GroupMessage(int id, int user_id_sent_by, int groupId,int parent_msg_id) {
         super(id, user_id_sent_by,parent_msg_id);
         this.group_id_sent_to = groupId;
