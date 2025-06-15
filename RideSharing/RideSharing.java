@@ -8,11 +8,31 @@ enum AccountMode{
     RIDER,
     DRIVER
 }
+enum RideStatus{
+    REQUESTED,
+    ACCEPTED,
+    CANCELLED,
+    COMPLETED
+}
 class Account{
     private String username,password;
     private String mobileNumber;
     private AccountStatus accountStatus;
     private AccountMode accountMode;
+}
+class Ride{
+    private int id;
+    private String driverId;
+    private String riderId;
+    private Location startPoint;
+    private Location dstPoint;
+    private RideStatus riderStatus;
+    private Integer totCost;
+    private Date rideCreated;
+    private Date rideAssigned;
+    private Date rideCompleted;
+    private VehicleModel vehicleModel;
+    // build audit logs for ride timings
 }
 class User{
     private String id;
@@ -24,24 +44,68 @@ class User{
     }
 }
 interface ISearchRide{
-    void searchRide(Location currentLocation,Location dstLocation,VehicleModel vehicleModel);
+    List<Vehicle>searchRide(Location currentLocation,Location dstLocation,VehicleModel vehicleModel);
+}
+interface IVehicleRepository {
+    void registerVehicle(String driverId, Vehicle vehicle, Location location);
+    void updateVehicleLocation(String driverId, Location location);
+    List<Vehicle> getAvailableVehicles();
+}
+class InMemoryVehicleRepository implements IVehicleRepository {
+    private final Map<String, Vehicle> vehicleMap = new HashMap<>();
+    private final Map<String, Location> locationMap = new HashMap<>();
+
+    public void registerVehicle(String driverId, Vehicle vehicle, Location location) {
+        vehicleMap.put(driverId, vehicle);
+        locationMap.put(driverId, location);
+    }
+
+    public void updateVehicleLocation(String driverId, Location location) {
+        locationMap.put(driverId, location);
+    }
+
+    public List<Vehicle> getAvailableVehicles() {
+        return new ArrayList<>(vehicleMap.values());
+    }
+    
+    public Map<String, Location> getLocationMap() {
+        return locationMap;
+    }
 }
 interface IRideAssignmentStrategy{
-    void getMeBestRide(Location currentLocation,Location dstLocation,VehicleModel vehicleModel);
+    List<Vehicle>getMeBestRide(Location currentLocation,Location dstLocation,VehicleModel vehicleModel);
 }
 class ShortestTimeRideStrategy implements IRideAssignmentStrategy{
-    public void getMeBestRide(Location currentLocation,Location dstLocation,VehicleModel vehicleModel){
-        
+    private IVehicleRepository vehicleRepository;
+
+    ShortestTimeRideStrategy(IVehicleRepository vehicleRepository) {
+        this.vehicleRepository = vehicleRepository;
+    }
+    public List<Vehicle>getMeBestRide(Location currentLocation,Location dstLocation,VehicleModel vehicleModel){
+        List<Vehicle> candidates = new ArrayList<>();
+        for (Vehicle v : vehicleRepository.getAvailableVehicles()) {
+            if (v instanceof FW && vehicleModel instanceof FWVehicleModel) {
+                candidates.add(v);
+            }
+            if (v instanceof TW && vehicleModel instanceof TWVehicleModel) {
+                candidates.add(v);
+            }
+        }
+        return candidates;
     }
 }
 class SearchRide implements ISearchRide{
-    public void searchRide(Location currentLocation,Location dstLocation,VehicleModel vehicleModel){
-
+    private IRideAssignmentStrategy rideAssignmentStrategy;
+    SearchRide(IRideAssignmentStrategy rideAssignmentStrategy){
+        this.rideAssignmentStrategy = rideAssignmentStrategy;
+    }
+    public List<Vehicle>searchRide(Location currentLocation,Location dstLocation,VehicleModel vehicleModel){
+        return rideAssignmentStrategy.getMeBestRide(currentLocation, dstLocation, vehicleModel);
     }
 }
 interface IRiderModeService{
-    void searchRide();
-    void cancelRide();
+    void searchRide(Location cuLocation,Location dstLocation,VehicleModel vehicleModel);
+    void cancelRide(Ride ride);
     void completePaymentForRide();
     // void rideHistory();
 }
@@ -50,11 +114,13 @@ interface IDriverModeService{
     void cancelRide();
 }
 class RiderService implements IRiderModeService{
-    private ISearchRide iSearchRide;
-    RiderService(ISearchRide iSearchRide){
-        this.iSearchRide = iSearchRide;
+    private final ISearchRide searchRide;
+    RiderService(ISearchRide searchRide){
+        this.searchRide = searchRide;
     }
-
+    public List<Vehicle>searchRide(Location cuLocation,Location dstLocation,VehicleModel vehicleModel){
+        return searchRide.searchRide(cuLocation, dstLocation, vehicleModel);
+    }
 }
 enum VehicleType{
     TW,
