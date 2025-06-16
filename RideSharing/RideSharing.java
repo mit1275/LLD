@@ -117,8 +117,12 @@ interface IRequestService{
     void removeRequest(String driverId,Request request);
 }
 class RequestService implements IRequestService{
+    private IUserRepository userRepository;
+    RequestService(IUserRepository userRepository){
+        this.userRepository = userRepository;
+    }
     public void addRequest(String driverId,Request request){
-
+        userRepository.addRequest(driverId,request);
     }
     public void removeRequest(String driverId,Request request){
 
