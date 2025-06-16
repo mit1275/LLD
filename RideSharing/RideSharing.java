@@ -14,6 +14,20 @@ enum RideStatus{
     CANCELLED,
     COMPLETED
 }
+enum Availability{
+    AVAILABLE,
+    NOT_AVAILABLE
+}
+class Request{
+    private Integer id;
+    private Location startLocation;
+    private Location endLocation;
+    Request(Integer id,Location startLocation,Location endLocation){
+        this.id = id;
+        this.startLocation = startLocation;
+        this.endLocation = endLocation;
+    }
+}
 class Account{
     private String username,password;
     private String mobileNumber;
@@ -41,6 +55,73 @@ class User{
     User(String displayName,Account account){
         this.displayName = displayName;
         this.account = account;
+    }
+    public String getId(){
+        return this.id;
+    }
+}
+class Driver extends User{
+    private Availability availability;
+    private VehicleModel vehicleModel;
+    private PriorityQueue<Request>requestQueue;
+    Driver(VehicleModel vehicleModel,String displayName,Account account){
+        this.availability = Availability.NOT_AVAILABLE;
+        this.vehicleModel = vehicleModel;
+        requestQueue = new PriorityQueue<>();
+        super(displayName,account);
+    }
+    public void updateAvailability(Availability availability){
+        this.availability = availability;
+    }
+}
+interface IUserRepository{
+    void registerUser(User u);
+    User getUser(String userId);
+}
+class DriverRepository implements IUserRepository{
+    private final Map<String,User>driverRepo;
+    private final Map<String,PriorityQueue<Request>>requestQueue;
+    DriverRepository(){
+        driverRepo = new HashMap<>();
+        requestQueue = new HashMap<>();
+    }
+    public void registerUser(User u){
+        driverRepo.put(u.getId(),u);
+    }
+    public void addRequest(String userId,Request request){
+        requestQueue.get(userId).add(request);
+    }
+    public PriorityQueue<Request>getRequestList(String userId){
+        return requestQueue.get(userId);
+    }
+    public User getUser(String userId){
+        return driverRepo.get(userId);
+    }
+}
+class RiderRepository implements IUserRepository{
+    private final Map<String,User>userRepo;
+    private final Map<String,PriorityQueue<Request>>requestQueue;
+    RiderRepository(){
+        userRepo = new HashMap<>();
+        requestQueue = new HashMap<>();
+    }
+    public void registerUser(User u){
+        userRepo.put(u.getId(),u);
+    }
+    public User getUser(String userId){
+        return userRepo.get(userId);
+    }
+}
+interface IRequestService{
+    void addRequest(String driverId,Request request);
+    void removeRequest(String driverId,Request request);
+}
+class RequestService implements IRequestService{
+    public void addRequest(String driverId,Request request){
+
+    }
+    public void removeRequest(String driverId,Request request){
+
     }
 }
 interface ISearchRide{
