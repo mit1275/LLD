@@ -18,14 +18,24 @@ enum Availability{
     AVAILABLE,
     NOT_AVAILABLE
 }
+enum RequestStatus{
+    CREATED,
+    PENDING,
+    COMPLETED,
+    CANCELLED
+}
 class Request{
+    private String userId;
     private Integer id;
     private Location startLocation;
     private Location endLocation;
-    Request(Integer id,Location startLocation,Location endLocation){
+    private RequestStatus requestStatus;
+    Request(String userId,Integer id,Location startLocation,Location endLocation){
+        this.userId = userId;
         this.id = id;
         this.startLocation = startLocation;
         this.endLocation = endLocation;
+        this.requestStatus = RequestStatus.CREATED;
     }
 }
 class Account{
@@ -34,7 +44,7 @@ class Account{
     private AccountStatus accountStatus;
     private AccountMode accountMode;
 }
-class Ride{
+public class Ride{
     private int id;
     private String driverId;
     private String riderId;
@@ -46,32 +56,92 @@ class Ride{
     private Date rideAssigned;
     private Date rideCompleted;
     private VehicleModel vehicleModel;
-    // build audit logs for ride timings
+    // new Ride(userId,null,curLocation,dstLocation);
+    Ride(String riderId,String driverId,Location startPoint,Location dstPoint){
+        this.riderId = riderId;
+        this.driverId = driverId;
+        this.id=1;
+        this.riderStatus = RideStatus.REQUESTED;
+        this.startPoint = startPoint;
+        this.dstPoint = dstPoint;
+    }
+    public void updateDriver(String driverId){
+        this.driverId = driverId;
+    }
+    public void updateCost(Integer cost){
+        this.totCost = totCost;
+    }
+    public String getRiderId(){
+        return this.riderId;
+    }
+    public String getDriverId(){
+        return this.driverId;
+    }
 }
 class User{
     private String id;
     private String displayName;
     private Account account;
+    private Availability availability;
     User(String displayName,Account account){
         this.displayName = displayName;
         this.account = account;
+        this.availability = Availability.AVAILABLE;
     }
     public String getId(){
         return this.id;
     }
+    public void updateAvailability(Availability availability){
+        this.availability = availability;
+    }
 }
 class Driver extends User{
-    private Availability availability;
     private VehicleModel vehicleModel;
     private PriorityQueue<Request>requestQueue;
     Driver(VehicleModel vehicleModel,String displayName,Account account){
-        this.availability = Availability.NOT_AVAILABLE;
+        super(displayName,account);
         this.vehicleModel = vehicleModel;
         requestQueue = new PriorityQueue<>();
-        super(displayName,account);
     }
-    public void updateAvailability(Availability availability){
-        this.availability = availability;
+}
+interface IUserServiceStrategy{
+    void cancelRide(Ride ride);
+}
+class DriverServiceStrategy implements IUserServiceStrategy{
+    private IRequestService requestService;
+    private IUserRepository userRepository;
+    DriverServiceStrategy(IRequestService requestService,IUserRepository userRepository){
+        this.requestService = requestService;
+        this.userRepository = userRepository;
+    }
+    public void acceptRide(String userId,Ride ride){
+        User u = userRepository.getUser(userId);
+        u.updateAvailability(Availability.NOT_AVAILABLE);
+        ride.updateDriver(userId);
+    }
+    public void cancelRide(Ride ride){
+        User u = userRepository.getUser(ride.getDriverId());
+        u.updateAvailability(Availability.AVAILABLE);
+        ride.updateDriver(null);
+    }
+    public void swipeRide(String driverId,Request request){
+        requestService.removeRequest(driverId,request);
+    }
+    public void updateAvailability(){
+
+    }
+}
+class RiderServiceStrategy implements IUserServiceStrategy{
+    private final IRequestService requestService;
+    RiderServiceStrategy(IRequestService requestService){
+        this.requestService = requestService;
+    }
+    public void requestRide(String userId,Location curLocation,Location dstLocation){
+        Request r = new Request(userId,1, curLocation, dstLocation);
+        requestService.addRequest(userId, r);
+    }
+    public void cancelRide(Ride ride){
+        
     }
 }
 interface IUserRepository{
@@ -189,7 +259,7 @@ class SearchRide implements ISearchRide{
     }
 }
 interface IRiderModeService{
-    void searchRide(Location cuLocation,Location dstLocation,VehicleModel vehicleModel);
+    List<Vehicle> searchRide(Location cuLocation,Location dstLocation,VehicleModel vehicleModel);
     void cancelRide(Ride ride);
     void completePaymentForRide();
     // void rideHistory();
