@@ -24,6 +24,88 @@ enum RequestStatus{
     COMPLETED,
     CANCELLED
 }
+interface IRideCostStrategy{
+    double getPrice();
+}
+interface PriceComponent{
+    double getPrice();
+}
+class BaseCharge{
+    private double price;
+    BaseCharge(double price){
+        this.price = price;
+    }
+    public double getCost(){
+        return this.price;
+    }
+}
+class DistanceBasedPricing implements PriceComponent {
+    private PriceComponent component;
+    private double distance;
+    private double ratePerKm;
+
+    DistanceBasedPricing(PriceComponent component, double distance, double ratePerKm) {
+        this.component = component;
+        this.distance = distance;
+        this.ratePerKm = ratePerKm;
+    }
+
+    public double getPrice() {
+        return component.getPrice() + (distance * ratePerKm);
+    }
+}
+class TimeBasedPricing implements PriceComponent {
+    private PriceComponent component;
+    private double timeInMinutes;
+    private double ratePerMinute;
+
+    TimeBasedPricing(PriceComponent component, double timeInMinutes, double ratePerMinute) {
+        this.component = component;
+        this.timeInMinutes = timeInMinutes;
+        this.ratePerMinute = ratePerMinute;
+    }
+
+    public double getPrice() {
+        return component.getPrice() + (timeInMinutes * ratePerMinute);
+    }
+}
+class SurgePricing implements PriceComponent {
+    private PriceComponent component;
+    private double surgeMultiplier;
+
+    SurgePricing(PriceComponent component, double surgeMultiplier) {
+        this.component = component;
+        this.surgeMultiplier = surgeMultiplier;
+    }
+
+    public double getPrice() {
+        return component.getPrice() * surgeMultiplier;
+    }
+}
+class TWRideCostStrategy implements IRideCostStrategy{
+    private double distance;
+    private double timeInMinutes;
+    private PriceComponent priceComponent;
+    TWRideCostStrategy(double distance, double timeInMinutes) {
+        this.distance = distance;
+        this.timeInMinutes = timeInMinutes;
+    }
+    public double getPrice(){
+
+    }
+}
+class FWRideCostStrategy implements IRideCostStrategy{
+    private double distance;
+    private double timeInMinutes;
+    private PriceComponent priceComponent;
+    FWRideCostStrategy(double distance, double timeInMinutes) {
+        this.distance = distance;
+        this.timeInMinutes = timeInMinutes;
+    }
+    public double getPrice(){
+
+    }
+}
 class Request{
     private String userId;
     private Integer id;
@@ -44,7 +126,7 @@ class Account{
     private AccountStatus accountStatus;
     private AccountMode accountMode;
 }
-public class Ride{
+class Ride{
     private int id;
     private String driverId;
     private String riderId;
@@ -262,7 +344,6 @@ interface IRiderModeService{
     List<Vehicle> searchRide(Location cuLocation,Location dstLocation,VehicleModel vehicleModel);
     void cancelRide(Ride ride);
     void completePaymentForRide();
-    // void rideHistory();
 }
 interface IDriverModeService{
     void acceptRide();
@@ -270,11 +351,19 @@ interface IDriverModeService{
 }
 class RiderService implements IRiderModeService{
     private final ISearchRide searchRide;
-    RiderService(ISearchRide searchRide){
+    private final IUserServiceStrategy userServiceStrategy;
+    RiderService(ISearchRide searchRide,IUserServiceStrategy userServiceStrategy){
         this.searchRide = searchRide;
+        this.userServiceStrategy = userServiceStrategy;
     }
     public List<Vehicle>searchRide(Location cuLocation,Location dstLocation,VehicleModel vehicleModel){
         return searchRide.searchRide(cuLocation, dstLocation, vehicleModel);
+    }
+    public void cancelRide(Ride ride){
+        userServiceStrategy.cancelRide(ride);
+    }
+    public void completePaymentForRide(){
+
     }
 }
 enum VehicleType{
