@@ -84,13 +84,13 @@ class HasCardState implements IATMState{
         // atm.setState(null);
     }
     public void enterPin(){
-
+        System.out.println("Press button to start operation");
     }
     public void authenticateUser(){
-
+        System.out.println("Press button to start operation");
     }
     public void startTransaction(){
-
+        System.out.println("Press button to start operation");
     }
 }
 class AuthenticateUserState implements IATMState{
