@@ -1,240 +1,169 @@
 package ATM;
-import java.util.*;
-class Card{
-    private Integer uniqueNo;
-    private Integer binNumber;
-    private Date issuedAt;
-    private Date expiry;
-    private String cardIssuer;
-    private String cardType;
-}
-interface IState{
+
+import javax.smartcardio.Card;
+
+interface IATMState{
     void insertCard(Card card);
+    void ejectCard(Card card);
     void pressButton();
     void enterPin();
     void authenticateUser();
-    void transactionManagement();
-    void dispenser();
+    void startTransaction();
 }
-class InsertCardState implements IState{
+class IdleState implements IATMState{
     private ATM atm;
-    InsertCardState(ATM atm){
+    IdleState(ATM atm){
         this.atm = atm;
     }
     public void insertCard(Card card){
-        System.out.println("Card Inserted");
-        atm.setCurrentState(atm.getPressButtonState());
+
+    }
+    public void ejectCard(Card card){
+
     }
     public void pressButton(){
-        System.out.println("Insert card first");
+
     }
     public void enterPin(){
-        System.out.println("Insert card first");
+
     }
     public void authenticateUser(){
-        System.out.println("Insert card first");
+
     }
-    public void transactionManagement(){
-        System.out.println("Insert card first");
-    }
-    public void dispenser(){
-        System.out.println("Insert card first");
+    public void startTransaction(){
+
     }
 }
-class PressButtonState implements IState{
+class HasCardState implements IATMState{
     private ATM atm;
-    PressButtonState(ATM atm){
+    HasCardState(ATM atm){
         this.atm = atm;
     }
     public void insertCard(Card card){
-        System.out.println("Card Already Inserted");
-        return ;
+
+    }
+    public void ejectCard(Card card){
+
     }
     public void pressButton(){
-        System.out.println("Button clicked");
-        atm.setCurrentState(atm.getEnterPinState());
+
     }
     public void enterPin(){
-        System.out.println("Select options");
+
     }
     public void authenticateUser(){
-        System.out.println("Select options");
+
     }
-    public void transactionManagement(){
-        System.out.println("Insert card first");
-    }
-    public void dispenser(){
-        System.out.println("Insert card first");
+    public void startTransaction(){
+
     }
 }
-class EnterPinState implements IState{
+class AuthenticateUserState implements IATMState{
     private ATM atm;
-    EnterPinState(ATM atm){
+    AuthenticateUserState(ATM atm){
         this.atm = atm;
     }
     public void insertCard(Card card){
-        System.out.println("Card Already Inserted");
-        return ;
+
+    }
+    public void ejectCard(Card card){
+
     }
     public void pressButton(){
-        System.out.println("Button clicked");
+
     }
     public void enterPin(){
-        System.out.println("Pin entered");
-        atm.setCurrentState(atm.getAuthenticatedState());
+
     }
     public void authenticateUser(){
-        System.out.println("Please enter pin");
+
     }
-    public void transactionManagement(){
-        System.out.println("Insert card first");
-    }
-    public void dispenser(){
-        System.out.println("Insert card first");
+    public void startTransaction(){
+
     }
 }
-class AuthenticatedState implements IState{
+class TransactionState implements IATMState{
     private ATM atm;
-    AuthenticatedState(ATM atm){
+    TransactionState(ATM atm){
         this.atm = atm;
     }
     public void insertCard(Card card){
-        System.out.println("Card Already Inserted");
-        return ;
+
+    }
+    public void ejectCard(Card card){
+
     }
     public void pressButton(){
-        System.out.println("Button clicked");
+
     }
     public void enterPin(){
-        System.out.println("Pin entered");
-        
+
     }
     public void authenticateUser(){
-        System.out.println("User Authenticated");
-        atm.setCurrentState(atm.getTransactionManagementState());
+
     }
-    public void transactionManagement(){
-        System.out.println("Authenticate User");
-    }
-    public void dispenser(){
-        System.out.println("Authenticate User");
+    public void startTransaction(){
+
     }
 }
-class TransactionManagementState implements IState{
-    private ATM atm;
-    TransactionManagementState(ATM atm){
-        this.atm = atm;
-    }
-    public void insertCard(Card card){
-        System.out.println("Card Already Inserted");
-        return ;
-    }
-    public void pressButton(){
-        System.out.println("Button clicked");
-    }
-    public void enterPin(){
-        System.out.println("Pin entered");
-    }
-    public void authenticateUser(){
-        System.out.println("User Authenticated");
-        
-    }
-    public void transactionManagement(){
-        System.out.println("Transaction complete");
-        atm.setCurrentState(atm.getDispenserState());
-    }
-    public void dispenser(){
-        System.out.println("Enter amount details");
-    }
+interface ITransactionOptions{
+    void withdrawCash();
+    void checkBalance();
+    void transferCash();
 }
-class DispenserState implements IState{
-    private ATM atm;
-    DispenserState(ATM atm){
-        this.atm = atm;
-    }
-    public void insertCard(Card card){
-        System.out.println("Card Already Inserted");
-        return ;
-    }
-    public void pressButton(){
-        System.out.println("Button clicked");
-    }
-    public void enterPin(){
-        System.out.println("Pin entered");
-        
-    }
-    public void authenticateUser(){
-        System.out.println("User Authenticated");
-        atm.setCurrentState(atm.getAuthenticatedState());
-    }
-    public void transactionManagement(){
-        System.out.println("Insert card first");
-    }
-    public void dispenser(){
-        System.out.println("Insert card first");
-    }
+interface IAuthentication{
+    void authenticateUser(Card card);
 }
-public class ATM {
-    private IState currentState;
-    private IState insertCardState;
-    private IState pressButtonState;
-    private IState enterPinState;
-    private IState authenticatedState;
-    private IState transactionManagementState;
-    private IState dispenserState;
+class ATM{
+    private IATMState IdleState;
+    private IATMState HasCardState;
+    private IATMState AuthenticateUserState;
+    private IATMState TransactionState;
+    private IATMState curState;
     ATM(){
-        insertCardState = new InsertCardState(this);
-        pressButtonState = new PressButtonState(this);
-        enterPinState = new EnterPinState(this);
-        authenticatedState = new AuthenticatedState(this);
-        transactionManagementState = new TransactionManagementState(this);
-        dispenserState = new DispenserState(this);
-        currentState = insertCardState;
+        IdleState = new IdleState(this);
+        HasCardState = new HasCardState(this);
+        AuthenticateUserState = new AuthenticateUserState(this);
+        TransactionState = new TransactionState(this);
+        curState = IdleState;
     }
-    public void setCurrentState(IState state) {
-        this.currentState = state;
+    public void setState(IATMState state) {
+        curState = state;
+    }
+    public IATMState getIdleState(){
+        return IdleState;
+    }
+    public IATMState getHasCardState(){
+        return HasCardState;
+    }
+    public IATMState getAuthenticateUserState(){
+        return AuthenticateUserState;
+    }
+    public IATMState getTransactionState(){
+        return TransactionState;
+    }
+    public IATMState getCurState(){
+        return curState;
     }
     public void insertCard(Card card){
-        currentState.insertCard(card);
+        curState.insertCard(Card card);
+    }
+    public void ejectCard(Card card){
+        curState.ejectCard(Card card);
     }
     public void pressButton(){
-        currentState.pressButton();
+        curState.pressButton();
     }
     public void enterPin(){
-        currentState.enterPin();
+        curState.enterPin();
     }
     public void authenticateUser(){
-        currentState.authenticateUser();
+        curState.authenticateUser();
     }
-    public void transactionManagement(){
-        currentState.transactionManagement();
+    public void startTransaction(){
+        curState.startTransaction();
     }
-    public void dispenser(){
-        currentState.dispenser();
-    }
-    public IState getInsertCardState() {
-        return insertCardState;
-    }
+    public static void main(String []args){
 
-    public IState getPressButtonState() {
-        return pressButtonState;
-    }
-
-    public IState getEnterPinState() {
-        return enterPinState;
-    }
-
-    public IState getAuthenticatedState() {
-        return authenticatedState;
-    }
-    public IState getTransactionManagementState() {
-        return transactionManagementState;
-    }
-    public IState getDispenserState() {
-        return dispenserState;
-    }
-    public static void main(String[]args){
-        
     }
 }
-// authenticate user, check balance, withdraw balance,
