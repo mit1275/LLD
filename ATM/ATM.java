@@ -1,8 +1,36 @@
 package ATM;
-
+import java.util.*;
 enum CardType{
     DEBIT_CARD,
     CREDIT_CARD
+}
+class ICardRepository{
+    private Map<Card,Integer>cardToPinMapping;
+    private List<Card>cards;
+    public Integer getPin(Card card){
+        return cardToPinMapping.get(card);
+    }
+    public void updateCard(Card card){
+        
+    }
+}
+interface ICardValidate{
+    void validateCardPin();
+}
+interface IPinAssignService{
+    void assignPin(Card card);
+    void updatePin(Card card);
+}
+class PinService implements IPinAssignService{
+    public void assignPin(Card card){
+
+    }
+    public void updatePin(Card card){
+        
+    }
+}
+class ValidateCardByPin implements ICardValidate{
+    
 }
 class Card{
     private String cardNo;
